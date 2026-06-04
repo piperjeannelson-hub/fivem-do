@@ -1,49 +1,24 @@
 local floatingText = nil
-local floatingTextObject = nil
+local floatingTextCoords = nil
 
-RegisterCommand('do', function(source, args, rawCommand)
-    if #args == 0 then
-        TriggerEvent('chat:addMessage', {
-            color = {255, 0, 0},
-            multiline = true,
-            args = {"ERROR", "Usage: /do [text]"}
-        })
-        return
-    end
-
-    local text = table.concat(args, " ")
-    local playerPed = PlayerPedId()
-    
-    -- Get the ped's waist bone position
-    local waistBone = GetPedBoneIndex(playerPed, 0x0cc49bbe) -- Waist bone SKEL_Spine2
-    local waistCoords = GetWorldPositionOfEntityBone(playerPed, waistBone)
-    
-    -- Remove existing floating text if any
-    if floatingTextObject ~= nil then
-        DeleteEntity(floatingTextObject)
-    end
-    
-    -- Create 3D floating text at waist position
+-- Listen for server events
+RegisterNetEvent('do:createFloatingText', function(text)
     floatingText = text
-    floatingTextObject = CreateMarkedObject({
-        model = "prop_notepad_02",
-        coords = waistCoords + vector3(0, 0, 0.5),
-        heading = 0.0,
-        networked = true
-    })
+    local playerPed = PlayerPedId()
+    local waistBone = GetPedBoneIndex(playerPed, 0x0cc49bbe) -- Waist bone SKEL_Spine2
+    floatingTextCoords = GetWorldPositionOfEntityBone(playerPed, waistBone)
     
     TriggerEvent('chat:addMessage', {
         color = {0, 255, 0},
         multiline = true,
         args = {"DO", text}
     })
-end, false)
+end)
 
-RegisterCommand('removedo', function(source, args, rawCommand)
-    if floatingTextObject ~= nil then
-        DeleteEntity(floatingTextObject)
-        floatingTextObject = nil
+RegisterNetEvent('do:removeFloatingText', function()
+    if floatingText ~= nil then
         floatingText = nil
+        floatingTextCoords = nil
         TriggerEvent('chat:addMessage', {
             color = {0, 255, 0},
             multiline = true,
@@ -56,13 +31,13 @@ RegisterCommand('removedo', function(source, args, rawCommand)
             args = {"ERROR", "No floating text to remove"}
         })
     end
-end, false)
+end)
 
 -- Render the floating text on screen
 Citizen.CreateThread(function()
     while true do
         Wait(0)
-        if floatingText ~= nil and floatingTextObject ~= nil then
+        if floatingText ~= nil then
             local playerPed = PlayerPedId()
             local waistBone = GetPedBoneIndex(playerPed, 0x0cc49bbe)
             local waistCoords = GetWorldPositionOfEntityBone(playerPed, waistBone)
